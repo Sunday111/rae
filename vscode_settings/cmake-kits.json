@@ -1,0 +1,10 @@
+[
+    {
+        "name": "LLVM distribution",
+        "compilers": {
+            "c": "${workspaceFolder}/llvm/bin/clang",
+            "cxx": "${workspaceFolder}/llvm/bin/clang++"
+        },
+        "toolchainFile": "${workspaceFolder}/cmake/llvm-toolchain.cmake"
+    }
+]

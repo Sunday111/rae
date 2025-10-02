@@ -1,0 +1,22 @@
+{
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "clangd.path": "${workspaceFolder}/llvm/bin/clangd",
+    "clang-format.executable": "${workspaceFolder}/llvm/bin/clang-format",
+    "editor.formatOnSave": true,
+    "github.copilot.enable": {
+        "*": false
+    },
+    // "cmake.configureSettings": {
+    //     "CMAKE_PREFIX_PATH": "${workspaceFolder}/dawn/install"
+    // },
+    "cmake.configureEnvironment": {
+        "GIT_TERMINAL_PROMPT": "0",
+        "GIT_ASKPASS": "",
+        "VSCODE_GIT_ASKPASS_NODE": "",
+        "VSCODE_GIT_ASKPASS_MAIN": "",
+        "VSCODE_GIT_IPC_HANDLE": "",
+        "GIT_CONFIG_COUNT": "1",
+        "GIT_CONFIG_KEY_0": "credential.helper",
+        "GIT_CONFIG_VALUE_0": ""
+    }
+}
