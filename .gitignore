@@ -3,3 +3,6 @@ llvm
 cache
 .cache
 .vscode
+build
+build_wasm
+emsdk

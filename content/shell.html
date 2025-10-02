@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dawn + ImGui (Web)</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      height: 100%
+    }
+
+    #canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+  <script>
+    // Meow
+    // Hand the canvas to the runtime before it loads:
+    var Module = { canvas: document.getElementById('canvas') };
+  </script>
+  {{{ SCRIPT }}}
+</body>
+
+</html>
