@@ -1,0 +1,9 @@
+dawn
+llvm
+cache
+.cache
+.vscode
+build
+build_wasm
+deploy_wasm
+emsdk
