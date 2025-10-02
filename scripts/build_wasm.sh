@@ -14,6 +14,7 @@ $emsdk_dir/upstream/emscripten/emcmake \
         -S $workspace_dir \
         -B $wasm_build_dir \
         -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
     && \
     cmake \
         --build $wasm_build_dir

@@ -26,6 +26,7 @@ export cmake_toolchain_file=$workspace_dir/cmake/llvm-toolchain.cmake
 
 export emsdk_dir=$workspace_dir/emsdk
 export wasm_build_dir=$workspace_dir/build_wasm
+export wasm_deploy_dir=$workspace_dir/deploy_wasm
 
 if [[ ! -d $cache_dir ]]; then
     mkdir -p $cache_dir
