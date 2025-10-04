@@ -7,6 +7,8 @@ struct GLFWwindow;
 class RenderContext
 {
 public:
+    ~RenderContext();
+
     void Init();
     void CreateRenderPipeline();
     void ChooseSurfaceFormatOnce();
@@ -25,4 +27,5 @@ public:
     // last configured backing size  (framebuffer px)
     int surface_width = 0;
     int surface_height = 0;
+    bool destroying = false;
 };

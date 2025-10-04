@@ -2,9 +2,6 @@
 
 #include <memory>
 
-// Dawn / WebGPU C++ wrappers
-#include <webgpu/webgpu_glfw.h>
-
 class RenderContext;
 struct GLFWwindow;
 
@@ -21,12 +18,9 @@ public:
     ~Application();
 
     void Init();
-    void ConfigureSurfaceToSize(int pxW, int pxH);
-    void InitGraphics();
-    void Render();
-    void Start();
-    void ChooseSurfaceFormatOnce();
     void InitImGui();
+    void Run();
+    void Tick();
     void ShutdownImGui();
 
 #if defined(__EMSCRIPTEN__)

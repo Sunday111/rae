@@ -13,6 +13,11 @@
 #include <emscripten/html5.h>
 #endif
 
+RenderContext::~RenderContext()
+{
+    destroying = true;
+}
+
 static const char shaderCode[] = R"(
     @vertex fn vertexMain(@builtin(vertex_index) i : u32) ->
       @builtin(position) vec4f {
@@ -58,19 +63,34 @@ void RenderContext::Init()
         [](wgpu::RequestAdapterStatus status,
            wgpu::Adapter adapter,
            wgpu::StringView msg,
-           RenderContext* app)
+           RenderContext* ctx)
         {
             if (status != wgpu::RequestAdapterStatus::Success)
             {
                 std::println("RequestAdapter: {}", msg.data);
                 std::exit(1);
             }
-            app->adapter = std::move(adapter);
+            ctx->adapter = std::move(adapter);
         },
         this);
     instance.WaitAny(f1, UINT64_MAX);
 
     wgpu::DeviceDescriptor ddesc{};
+    ddesc.SetDeviceLostCallback(
+        wgpu::CallbackMode::WaitAnyOnly,
+        [](const wgpu::Device&,
+           wgpu::DeviceLostReason reason,
+           wgpu::StringView msg,
+           RenderContext* ctx)
+        {
+            if (!ctx->destroying)
+            {
+                std::cout << "Device lost.\n";
+                std::cout << "  Reason: " << reason << "\n";
+                std::cout << "  Msg: " << msg << "\n";
+            }
+        },
+        this);
     ddesc.SetUncapturedErrorCallback(
         [](const wgpu::Device&, wgpu::ErrorType type, wgpu::StringView msg)
         { std::cout << "Device error (" << type << "): " << msg << "\n"; });
@@ -81,14 +101,14 @@ void RenderContext::Init()
         [](wgpu::RequestDeviceStatus status,
            wgpu::Device d,
            wgpu::StringView msg,
-           RenderContext* app)
+           RenderContext* ctx)
         {
             if (status != wgpu::RequestDeviceStatus::Success)
             {
                 std::cout << "RequestDevice: " << msg << "\n";
                 std::exit(1);
             }
-            app->device = std::move(d);
+            ctx->device = std::move(d);
         },
         this);
     instance.WaitAny(f2, UINT64_MAX);
@@ -121,7 +141,7 @@ void RenderContext::ChooseSurfaceFormatOnce()
 
 void RenderContext::ConfigureSurfaceToSize(int pxW, int pxH)
 {
-    if (pxW <= 0 || pxH <= 0) return;
+    if (pxW == surface_width && pxH == surface_height) return;
 
     ChooseSurfaceFormatOnce();
 

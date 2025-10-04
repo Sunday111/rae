@@ -7,6 +7,7 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_wgpu.h"
 #include "render_context.hpp"
+#include "webgpu/webgpu_glfw.h"
 
 #if defined(__EMSCRIPTEN__)
 #include <emscripten/emscripten.h>
@@ -40,21 +41,45 @@ void Application::ShutdownImGui()
     ImGui::DestroyContext();
 }
 
-// ---------------- WebGPU init ----------------
-void Application::ChooseSurfaceFormatOnce()
-{
-    render_context->ChooseSurfaceFormatOnce();
-}
-
-void Application::ConfigureSurfaceToSize(int pxW, int pxH)
-{
-    render_context->ConfigureSurfaceToSize(pxW, pxH);
-}
-
 void Application::Init()
 {
     render_context = std::make_unique<RenderContext>();
     render_context->Init();
+
+    if (!glfwInit()) return;
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    window = glfwCreateWindow(800, 600, "WebGPU window", nullptr, nullptr);
+    render_context->surface =
+        wgpu::glfw::CreateSurfaceForWindow(render_context->instance, window);
+#if defined(__EMSCRIPTEN__)
+    // Make the canvas focusable & focused so keyboard works; disable context
+    // menu
+    EM_ASM({
+        if (Module['canvas'])
+        {
+            Module['canvas'].setAttribute('tabindex', '0');
+            Module['canvas'].style.outline = 'none';
+            Module['canvas'].focus();
+            Module['canvas'].oncontextmenu = function(e)
+            {
+                e.preventDefault();
+            };
+        }
+    });
+    // Ensure surface is configured to CSS × DPR before pipeline/UI init
+    UpdateCanvasAndSurfaceSize();
+#else
+    int fbW = 0, fbH = 0;
+    glfwGetFramebufferSize(window, &fbW, &fbH);
+    if (fbW == 0 || fbH == 0)
+    {
+        fbW = 800;
+        fbH = 600;
+    }
+    render_context->ConfigureSurfaceToSize(fbW, fbH);
+#endif
+    render_context->CreateRenderPipeline();
+    InitImGui();
 }
 
 #if defined(__EMSCRIPTEN__)
@@ -64,8 +89,7 @@ void Application::UpdateCanvasAndSurfaceSize()
 }
 #endif
 
-// ---------------- Render loop ----------------
-void Application::Render()
+void Application::Tick()
 {
     // Always pump events (web + native) so ImGui input is fresh.
     glfwPollEvents();
@@ -78,12 +102,8 @@ void Application::Render()
     int winW = 0, winH = 0, fbW = 0, fbH = 0;
     glfwGetWindowSize(window, &winW, &winH);
     glfwGetFramebufferSize(window, &fbW, &fbH);
-    if (fbW > 0 && fbH > 0 &&
-        (fbW != render_context->surface_width ||
-         fbH != render_context->surface_height))
-    {
-        ConfigureSurfaceToSize(fbW, fbH);
-    }
+    render_context->ConfigureSurfaceToSize(fbW, fbH);
+
     if (ImGui::GetCurrentContext())
     {
         ImGuiIO& io = ImGui::GetIO();
@@ -149,51 +169,8 @@ void Application::Render()
 #endif
 }
 
-// ---------------- App bootstrap ----------------
-void Application::InitGraphics()
+void Application::Run()
 {
-#if defined(__EMSCRIPTEN__)
-    // Make the canvas focusable & focused so keyboard works; disable context
-    // menu
-    EM_ASM({
-        if (Module['canvas'])
-        {
-            Module['canvas'].setAttribute('tabindex', '0');
-            Module['canvas'].style.outline = 'none';
-            Module['canvas'].focus();
-            Module['canvas'].oncontextmenu = function(e)
-            {
-                e.preventDefault();
-            };
-        }
-    });
-    // Ensure surface is configured to CSS × DPR before pipeline/UI init
-    UpdateCanvasAndSurfaceSize();
-#else
-    int fbW = 0, fbH = 0;
-    glfwGetFramebufferSize(window, &fbW, &fbH);
-    if (fbW == 0 || fbH == 0)
-    {
-        fbW = 800;
-        fbH = 600;
-    }
-    ConfigureSurfaceToSize(fbW, fbH);
-#endif
-    render_context->CreateRenderPipeline();
-    InitImGui();
-}
-
-void Application::Start()
-{
-    if (!glfwInit()) return;
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    window = glfwCreateWindow(800, 600, "WebGPU window", nullptr, nullptr);
-    render_context->surface =
-        wgpu::glfw::CreateSurfaceForWindow(render_context->instance, window);
-
-    // Configure surface + pipeline + ImGui
-    InitGraphics();
-
 #if defined(__EMSCRIPTEN__)
     // Register resize callback AFTER ImGui exists, then enter main loop
     emscripten_set_resize_callback(
@@ -206,14 +183,15 @@ void Application::Start()
             return EM_TRUE;
         });
     emscripten_set_main_loop(
-        []() { Application::Instance().Render(); },
+        []() { Application::Instance().Tick(); },
         0,
         false);
 #else
     while (!glfwWindowShouldClose(window))
     {
-        Render();
+        Tick();
     }
+    render_context = nullptr;
     ShutdownImGui();
     glfwDestroyWindow(window);
     glfwTerminate();

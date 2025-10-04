@@ -4,5 +4,5 @@ int main()
 {
     auto& app = Application::Instance();
     app.Init();
-    app.Start();
+    app.Run();
 }
