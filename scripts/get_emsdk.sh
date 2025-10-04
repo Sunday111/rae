@@ -12,3 +12,4 @@ fi
 
 
 $emsdk_dir/emsdk install latest
+$emsdk_dir/emsdk activate latest

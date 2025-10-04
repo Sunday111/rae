@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 project(app)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ---- Dawn (as subdir; your working approach) ----
@@ -19,7 +19,9 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(imgui)
 
 # ---- Executable ----
-add_executable(app src/main.cpp)
+file(GLOB_RECURSE src_hpp CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp")
+file(GLOB_RECURSE src_cpp CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+add_executable(app ${src_hpp} ${src_cpp})
 
 # ImGui core + backends (add demo or remove ShowDemoWindow from your code)
 target_sources(app PRIVATE
@@ -32,11 +34,7 @@ target_sources(app PRIVATE
   ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
 )
 
-# if (EMSCRIPTEN)
-# else()
-# target_sources(app PRIVATE
-# )
-# endif()
+
 
 target_include_directories(app PRIVATE
   ${imgui_SOURCE_DIR}
