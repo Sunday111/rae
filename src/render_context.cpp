@@ -11,6 +11,16 @@
 #include <GLFW/glfw3.h>
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
+
+#include <sstream>
+
+extern "C"
+{
+    void js_append_log(const char* msg)
+    {
+        EM_ASM({ appendLog(UTF8ToString($0)); }, msg);
+    }
+}
 #endif
 
 RenderContext::~RenderContext()
@@ -93,7 +103,16 @@ void RenderContext::Init()
         this);
     ddesc.SetUncapturedErrorCallback(
         [](const wgpu::Device&, wgpu::ErrorType type, wgpu::StringView msg)
-        { std::cout << "Device error (" << type << "): " << msg << "\n"; });
+        {
+#if defined(__EMSCRIPTEN__)
+            std::stringstream stream;
+            stream << "Device error (" << type << "): " << msg << "\n";
+            std::string str = stream.str();
+            js_append_log(str.data());
+#endif
+
+            std::cout << "Device error (" << type << "): " << msg << "\n";
+        });
 
     wgpu::Future f2 = adapter.RequestDevice(
         &ddesc,
