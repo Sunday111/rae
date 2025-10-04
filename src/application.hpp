@@ -1,21 +1,12 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
-
-#include <cmath>
-
-#if defined(__EMSCRIPTEN__)
-#include <emscripten/emscripten.h>
-#include <emscripten/html5.h>
-#endif
+#include <memory>
 
 // Dawn / WebGPU C++ wrappers
-#include <dawn/webgpu_cpp_print.h>
-#include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
 
-// ImGui
-#include <imgui.h>
+class RenderContext;
+struct GLFWwindow;
 
 class Application
 {
@@ -26,14 +17,16 @@ public:
         return app;
     }
 
+    Application();
+    ~Application();
+
     void Init();
     void ConfigureSurfaceToSize(int pxW, int pxH);
     void InitGraphics();
-    void CreateRenderPipeline();
     void Render();
     void Start();
     void ChooseSurfaceFormatOnce();
-    void InitImGui(GLFWwindow* window);
+    void InitImGui();
     void ShutdownImGui();
 
 #if defined(__EMSCRIPTEN__)
@@ -41,15 +34,6 @@ public:
 #endif
 
 private:
-    wgpu::Instance instance;
-    wgpu::Adapter adapter;
-    wgpu::Device device;
-    wgpu::RenderPipeline pipeline;
-
-    wgpu::Surface surface;
-    wgpu::TextureFormat format = wgpu::TextureFormat::Undefined;
-
-    GLFWwindow* gWindow = nullptr;
-    int gCfgWidth = 0;   // last configured backing width  (framebuffer px)
-    int gCfgHeight = 0;  // last configured backing height (framebuffer px)
+    GLFWwindow* window = nullptr;
+    std::unique_ptr<RenderContext> render_context;
 };
