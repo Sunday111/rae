@@ -91,27 +91,32 @@ void Application::UpdateCanvasAndSurfaceSize()
 
 void Application::Tick()
 {
-    // Always pump events (web + native) so ImGui input is fresh.
     glfwPollEvents();
 
 #if defined(__EMSCRIPTEN__)
     UpdateCanvasAndSurfaceSize();
 #endif
-    // Native: update ImGui IO for correct scaling and reconfigure on size
-    // change.
-    int winW = 0, winH = 0, fbW = 0, fbH = 0;
-    glfwGetWindowSize(window, &winW, &winH);
-    glfwGetFramebufferSize(window, &fbW, &fbH);
-    render_context->ConfigureSurfaceToSize(fbW, fbH);
+    int window_width = 0, window_height = 0, framebuffer_width = 0,
+        framebuffer_height = 0;
+    glfwGetWindowSize(window, &window_width, &window_height);
+    glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
+    render_context->ConfigureSurfaceToSize(
+        framebuffer_width,
+        framebuffer_height);
 
     if (ImGui::GetCurrentContext())
     {
         ImGuiIO& io = ImGui::GetIO();
-        io.DisplaySize =
-            ImVec2(static_cast<float>(winW), static_cast<float>(winH));
+        io.FontGlobalScale = 2.0;
+        io.DisplaySize = ImVec2(
+            static_cast<float>(window_width),
+            static_cast<float>(window_height));
         io.DisplayFramebufferScale = ImVec2(
-            winW ? static_cast<float>(fbW) / winW : 1.f,
-            winH ? static_cast<float>(fbH) / winH : 1.f);
+            window_width ? static_cast<float>(framebuffer_width) / window_width
+                         : 1.f,
+            window_height
+                ? static_cast<float>(framebuffer_height) / window_height
+                : 1.f);
     }
 
     // ImGui frame
@@ -122,10 +127,32 @@ void Application::Tick()
 
     static bool show_demo = true;
     ImGui::Begin("WebGPU + ImGui");
+    ImGui::Text("Window: %d x %d", window_width, window_height);
+    ImGui::Text("Framebuffer: %d x %d", framebuffer_width, framebuffer_height);
     ImGui::Text(
-        "Framebuffer: %d x %d",
+        "Surface: %d x %d",
         render_context->surface_width,
         render_context->surface_height);
+
+#if defined(__EMSCRIPTEN__)
+    double cssW = 0, cssH = 0;
+    emscripten_get_element_css_size("#canvas", &cssW, &cssH);
+    ImGui::Text(
+        "Canvas css element size: %fx%f",
+        static_cast<float>(cssW),
+        static_cast<float>(cssH));
+
+    int canvasW = 0, canvasH = 0;
+    emscripten_get_canvas_element_size("#canvas", &canvasW, &canvasH);
+    ImGui::Text(
+        "Canvas element size: %fx%f",
+        static_cast<float>(canvasW),
+        static_cast<float>(canvasH));
+
+    ImGui::Text(
+        "DPR: %f",
+        static_cast<float>(emscripten_get_device_pixel_ratio()));
+#endif
     ImGui::Checkbox("Show Demo", &show_demo);
     ImGui::End();
     if (show_demo) ImGui::ShowDemoWindow(&show_demo);

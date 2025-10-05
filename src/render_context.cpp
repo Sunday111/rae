@@ -14,13 +14,19 @@
 
 #include <sstream>
 
-extern "C"
-{
-    void js_append_log(const char* msg)
+#endif
+
+#if defined(__EMSCRIPTEN__)
+EM_JS(void, js_append_log, (const char* msg), {
+    let pre = document.getElementById('log');
+    if (!pre)
     {
-        EM_ASM({ appendLog(UTF8ToString($0)); }, msg);
+        pre = document.createElement('pre');
+        pre.id = 'log';
+        document.body.appendChild(pre);
     }
-}
+    pre.textContent += UTF8ToString(msg) + "\n";
+});
 #endif
 
 RenderContext::~RenderContext()
@@ -77,6 +83,14 @@ void RenderContext::Init()
         {
             if (status != wgpu::RequestAdapterStatus::Success)
             {
+#if defined(__EMSCRIPTEN__)
+                std::stringstream stream;
+                stream << "RequestAdapter: \n";
+                stream << "  status: " << status << "\n";
+                stream << "  message: " << msg << "\n";
+                std::string str = stream.str();
+                js_append_log(str.data());
+#endif
                 std::println("RequestAdapter: {}", msg.data);
                 std::exit(1);
             }
@@ -187,7 +201,7 @@ void RenderContext::UpdateCanvasAndSurfaceSize(
     int pxW = static_cast<int>(std::round(cssW * dpr));
     int pxH = static_cast<int>(std::round(cssH * dpr));
     if (pxW <= 0 || pxH <= 0) return;
-    glfwSetWindowSize(window, cssW, cssH);
+    glfwSetWindowSize(window, pxW, pxH);
 
     // Ensure canvas backing store matches CSS × DPR.
     emscripten_set_canvas_element_size(canvas, pxW, pxH);
